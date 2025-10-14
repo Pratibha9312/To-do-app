@@ -8,6 +8,28 @@ import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Link } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import { useState, useEffect } from 'react';
+import NewListModal from './Lists/NewList';
+import NewTaskModal from './Tasks/NewTasks';
+
+interface List {
+    id: number;
+    title: string;
+    description: string | null;
+    tasks_count?: number;
+}
+interface Task {
+    id: number;
+    title: string;
+    description: string|null;
+    is_completed: boolean;
+    due_date: string|null;
+    list_id: number;
+    list: {
+        id: number;
+        title: string;
+    }
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -23,6 +45,7 @@ interface Props {
         completedTasks: number;
         pendingTasks: number;
     };
+     lists: List[];
 }
 
 export default function Dashboard({ stats = {
@@ -30,7 +53,14 @@ export default function Dashboard({ stats = {
     totalTasks: 0,
     completedTasks: 0,
     pendingTasks: 0
-}}: Props) {
+},
+lists}: Props) {
+
+    const [editingList, setEditingList] = useState<List | null>(null);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -41,18 +71,17 @@ export default function Dashboard({ stats = {
                         <p className='text-muted-foreground mt-1'>Welcome back! Here's your overview</p>
                     </div>
                     <div className='flex gap-2'>
-                        <Link href={route('lists.index')}>
-                            <Button className='bg-primary hover:bg-primary/90 text-white shadow-lg'>
-                                <List className='h-4 w-4 mr-2' />
-                                View Lists
-                            </Button>
-                        </Link>
-                        <Link href={route('tasks.index')}>
-                             <Button className='bg-primary hover:bg-primary/90 text-white shadow-lg'>
-                                <CheckCircle className='h-4 w-4 mr-2' />
-                                View Tasks
-                            </Button>
-                        </Link>
+                        <NewListModal
+                            editingList={editingList}
+                            setEditingList={setEditingList}
+                            onClose={() => setModalOpen(false)}
+                        />
+                        <NewTaskModal 
+                        open={isOpen} setOpen={setIsOpen} 
+                        editingTask={editingTask} 
+                        setEditingTask={setEditingTask} 
+                        lists={lists}
+                        />
                     </div>
                     
                 </div>

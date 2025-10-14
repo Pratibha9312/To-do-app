@@ -1,17 +1,14 @@
 import { Head } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, List } from 'lucide-react';
-import { Link } from '@inertiajs/react';
+import { Pencil, Trash2, CheckCircle2, XCircle, List } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types'; 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
+import NewListModal from './NewList';
 
 
 interface List{
@@ -37,8 +34,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
  
 export default function ListIndex({ lists, flash }: Props){
-    const [isOpen, setIsOpen] = useState(false);
+    // const [isOpen, setIsOpen] = useState(false);
     const [editingList, setEditingList] = useState<List | null>(null);
+     const [modalOpen, setModalOpen] = useState(false);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
@@ -64,41 +62,19 @@ export default function ListIndex({ lists, flash }: Props){
         }
     }, [showToast]);
 
-    const  { data, setData, post, put, processing, reset, delete: destroy } = useForm({
-        title: '',
-        description: ''
-    });
+    const { delete: destroy } = useForm();
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (editingList) {
-            put(route('lists.update', editingList.id), {
-                onSuccess: () =>{
-                    setIsOpen(false);
-                    reset();
-                    setEditingList(null);
-                },
-            });
-        }else{
-            post(route('lists.store'),{
-                onSuccess: () =>{ 
-                    setIsOpen(false);
-                    reset();
-                 },
-            });
-        }
-    };
+   const handleEdit = (list: List) => {
+    setEditingList(list);
+    setModalOpen(true);
+  };
 
-    const handleEdit = (list: List) => {
-        setEditingList(list);
-        setData({
-            title: list.title,
-            description: list.description || ''
-        });
-        setIsOpen(true);
-    };
+  const handleAddNew = () => {
+    setEditingList(null);
+    setModalOpen(true);
+  };
 
-    const handleDelete = (listId: number) => {
+  const handleDelete = (listId: number) => {
         destroy(route('lists.destroy', listId));
     };
 
@@ -123,46 +99,11 @@ export default function ListIndex({ lists, flash }: Props){
 
             <div className='flex justify-between items-center'>
                 <h1 className='text-2xl font-bold'>Lists</h1>
-                <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogTrigger asChild>
-                    <Button>
-                    <Plus className='h-4 w-4 mr-2' />
-                    New List
-                    </Button>
-                </DialogTrigger>
-
-                <DialogContent>
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                    <DialogHeader>
-                        <DialogTitle>{editingList ? 'Edit List' : 'Create New List'}</DialogTitle>
-                    </DialogHeader>
-
-                    <div className='space-y-2'>
-                        <Label htmlFor='title'>Title</Label>
-                        <Input
-                        id='title'
-                        value={data.title}
-                        onChange={(e) => setData('title', e.target.value)}
-                        required
-                        />
-                    </div>
-
-                    <div className='space-y-2'>
-                        <Label htmlFor='description'>Description</Label>
-                        <Textarea
-                        id='description'
-                        value={data.description}
-                        onChange={(e) => setData('description', e.target.value)}
-                        required
-                        />
-                    </div>
-
-                    <Button type='submit' disabled={processing}>
-                        {editingList ? 'Update' : 'Create'}
-                    </Button>
-                    </form>
-                </DialogContent>
-                </Dialog>
+                <NewListModal
+                    editingList={editingList}
+                    setEditingList={setEditingList}
+                    onClose={() => setModalOpen(false)}
+                />
             </div>
 
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>

@@ -1,19 +1,14 @@
 import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, List, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
-import { Link } from '@inertiajs/react';
+import { Pencil, Trash2, CheckCircle2, XCircle, List, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types'; 
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useForm } from '@inertiajs/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';  
 import { route } from 'ziggy-js';
-import { Breadcrumb } from '@/components/ui/breadcrumb';
+import NewTaskModal from './NewTasks';
 
 interface Task {
     id: number;
@@ -99,26 +94,6 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
         is_completed: false as boolean,
     });
 
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        if (editingTask) {
-            put(route('tasks.update', editingTask.id), {
-                onSuccess: () =>{
-                    setIsOpen(false);
-                    reset();
-                    setEditingTask(null);
-                },
-            });
-        }else{
-            post(route('tasks.store'),{
-                onSuccess: () =>{ 
-                    setIsOpen(false);
-                    reset();
-                 },
-            });
-        }
-    };
-
     const handleEdit = (task: Task) => {
         setEditingTask(task);
         setData({
@@ -189,91 +164,11 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
                 <div className='flex justify-between items-center'>
                     <h1 className='text-2xl font-bold tracking-tight'>Tasks</h1>
                     <p className='text-muted-foreground mt-1'>Manage your tasks and stay organized</p>
-                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger>
-                        <Button className='bg-primary hover:bg-primary/90 text-white shadow-lg'>
-                        <Plus className='h-4 w-4 mr-2' />
-                        New Task
-                        </Button>
-                    </DialogTrigger>
-
-                    < DialogContent className='sm:max-w-[425px]'>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                        <DialogHeader>
-                            <DialogTitle className='text-xl'>{editingTask ? 'Edit Task' : 'Create New Task'}</DialogTitle>
-                        </DialogHeader>
-
-                        <div className='space-y-2'>
-                            <Label htmlFor='title'>Title</Label>
-                            <Input
-                            id='title'
-                            value={data.title}
-                            onChange={(e) => setData('title', e.target.value)}
-                            className='focus:ring-2 focus:ring-primary'
-                            required
-                            />
-                        </div>
-
-                        <div className='space-y-2'>
-                            <Label htmlFor='description'>Description</Label>
-                            <Textarea
-                            id='description'
-                            value={data.description}
-                            onChange={(e) => setData('description', e.target.value)}
-                            className='focus:ring-2 focus:ring-primary'
-                            required
-                            />
-                        </div>
-
-                        <div className='space-y-2'>
-                            <Label htmlFor='list_id'>List</Label>
-                            <Select 
-                            value={data.list_id}
-                            onValueChange={(value) => setData('list_id', value)}
-                            >
-                                <SelectTrigger className='focus:ring-2 focus:ring-primary'>
-                                    <SelectValue placeholder="Select a list" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {lists.map((list) => (
-                                        <SelectItem key={list.id} value={list.id.toString()}>
-                                            {list.title}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div className='space-y-2'>
-                            <Label htmlFor='due_date'>Due Date</Label>
-                            <Input
-                            id='due_date'
-                            type='date'
-                            value={data.due_date}
-                            onChange={(e) => setData('due_date', e.target.value)}
-                            className='focus:ring-2 focus:ring-primary'
-                            required
-                            />
-                        </div>
-
-                        <div className='flex items-center space-x-2'>
-                            <input type='checkbox'
-                            id='is_completed'
-                            checked={data.is_completed}
-                            onChange={(e) => setData('is_completed', e.target.checked)}
-                            className='h-4 w-4 rounded border-gray-300 focus:ring-2 focus:ring-primary'
-                            />
-                            <Label htmlFor='is_completed'>Completed</Label>
-                        </div>
-                        <Button 
-                            type='submit'
-                            disabled={processing}
-                            className='w-full bg-primary hover:bg-primary/90 text-white shadow-lg'>
-                            {editingTask ? 'Update' : 'Create'}
-                        </Button>
-                        </form>
-                    </DialogContent>
-                    </Dialog>
+                    <NewTaskModal 
+                        open={isOpen} setOpen={setIsOpen} 
+                        editingTask={editingTask} setEditingTask={setEditingTask} 
+                        lists={lists}
+                    />
                 </div>
 
                 <div className='flex gap-4 mb-4'>
