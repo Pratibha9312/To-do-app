@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from '@inertiajs/react';
+import { router, useForm } from '@inertiajs/react';
 import { route } from 'ziggy-js';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -43,6 +43,8 @@ export default function NewTaskModal({ open, setOpen, editingTask, setEditingTas
     due_date: '',
     list_id: '',
     is_completed: false,
+    attachment: null as File | null,
+    type: 'T',
   });
 
   // Load data into form when editingTask changes
@@ -54,6 +56,8 @@ export default function NewTaskModal({ open, setOpen, editingTask, setEditingTas
         due_date: editingTask.due_date || '',
         list_id: editingTask.list_id.toString(),
         is_completed: editingTask.is_completed,
+        attachment: null,
+        type: 'T'
       });
     } else {
       reset();
@@ -64,15 +68,27 @@ export default function NewTaskModal({ open, setOpen, editingTask, setEditingTas
     e.preventDefault();
 
     if (editingTask) {
-      put(route('tasks.update', editingTask.id), {
+       router.post(
+      route('tasks.update', editingTask.id),
+      {
+        ...data,          // form data
+        _method: 'put',   // Laravel will treat as PUT
+      },
+      {
+        forceFormData: true, // required for file uploads
         onSuccess: () => {
           setOpen(false);
           reset();
           setEditingTask(null);
         },
-      });
+        onError: (errors) => {
+          console.error('Update failed:', errors);
+        },
+      }
+    );
     } else {
       post(route('tasks.store'), {
+        forceFormData: true,
         onSuccess: () => {
           setOpen(false);
           reset();
@@ -84,7 +100,10 @@ export default function NewTaskModal({ open, setOpen, editingTask, setEditingTas
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg">
+        <Button className="bg-primary hover:bg-primary/90 text-white shadow-lg"
+          onClick={() => {
+            setEditingTask(null);
+          }}>
           <Plus className="h-4 w-4 mr-2" />
           New Task
         </Button>
@@ -144,9 +163,19 @@ export default function NewTaskModal({ open, setOpen, editingTask, setEditingTas
             />
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="attachment">Attachment</Label>
+            <Input
+              id="attachment"
+              type="file"
+              onChange={(e) => setData('attachment', e.target.files?.[0] || null)}
+              accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt"
+            />
+          </div>
+
           <div className="flex items-center space-x-2">
             <input
-              type="checkbox"
+              type="checkbox" 
               id="is_completed"
               checked={data.is_completed}
               onChange={(e) => setData('is_completed', e.target.checked)}

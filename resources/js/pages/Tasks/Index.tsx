@@ -1,6 +1,6 @@
 import { Head, router } from '@inertiajs/react';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, CheckCircle2, XCircle, List, Calendar, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pencil, Trash2, CheckCircle2, XCircle, List, Calendar, Search, ChevronLeft, ChevronRight, FileIcon} from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types'; 
 import { useState, useEffect } from 'react';
@@ -9,6 +9,14 @@ import { useForm } from '@inertiajs/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';  
 import { route } from 'ziggy-js';
 import NewTaskModal from './NewTasks';
+import FileModal from '../Components/FIleModal';
+
+interface File {
+  id: number;
+  original_name: string;
+  path: string;
+  url: string;
+}
 
 interface Task {
     id: number;
@@ -21,6 +29,7 @@ interface Task {
         id: number;
         title: string;
     }
+    file?: File | null;
 }
 
 interface List {
@@ -64,6 +73,8 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [searchTerm, setSearchTerm] = useState(filters.search);
     const [completionFilter, setCompletionFilter] = useState<'all' | 'completed' | 'pending'>(filters.filter as 'all' | 'completed' | 'pending');
+    const [isFileModalOpen, setIsFileModalOpen] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     useEffect(() => {
         if(flash?.success){
@@ -204,6 +215,7 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
                                 <th className='h-12 px-4 text-left align-middle font-medium text-muted-foreground'>Description</th>
                                 <th className='h-12 px-4 text-left align-middle font-medium text-muted-foreground'>List</th>
                                 <th className='h-12 px-4 text-left align-middle font-medium text-muted-foreground'>Due Date</th>
+                                <th className='h-12 px-4 text-left align-middle font-medium text-muted-foreground'>File</th>
                                 <th className='h-12 px-4 text-left align-middle font-medium text-muted-foreground'>Status</th>
                                 <th className='h-12 px-4 text-left align-middle font-medium text-muted-foreground'>Actions</th>
                                 </tr>
@@ -224,6 +236,22 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
                                             ) : (
                                                <span className='text-muted-foreground'>No due date</span> 
                                             )}</td>
+                                           <td className="p-4 align-middle text-center">
+                                            {task.file ? (
+                                                <button
+                                                onClick={() => {
+                                                    setSelectedFile(task.file!);
+                                                    setIsFileModalOpen(true);
+                                                }}
+                                                className="flex items-center justify-center gap-2 hover:text-primary"
+                                                id="file-modal-trigger"
+                                                >
+                                                <FileIcon className="h-4 w-4 text-muted-foreground" />
+                                                </button>
+                                            ) : (
+                                                <span className="inline-block w-4 h-4"></span>
+                                            )}
+                                            </td>
                                             <td className='p-4 align-middle'>{task.is_completed ? (
                                                 <div className='flex items-center gap-2 text-green-500'>
                                                     <CheckCircle2 className='h-4 w-4' />
@@ -294,6 +322,11 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
                     </div>
                 </div>
             </div>
+            <FileModal
+            open={isFileModalOpen}
+            onClose={() => setIsFileModalOpen(false)}
+            file={selectedFile}
+            />
         </AppLayout>
      )
 }

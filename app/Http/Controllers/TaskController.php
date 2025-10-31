@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\TaskList;
 use App\Models\Task;
+use App\Models\File;
+use App\Models\FileRelation;
 
 class TaskController extends Controller
 {
@@ -14,7 +16,7 @@ class TaskController extends Controller
      */
     public function index()
     {
-        $query = Task::with('list')
+        $query = Task::with(['list', 'file'])
         ->whereHas('list', function($query){
             $query->where('user_id',auth()->id());
         })->orderBy('created_at', 'desc');
@@ -33,6 +35,7 @@ class TaskController extends Controller
         }
         $tasks = $query->paginate(10);
         $lists = TaskList::where('user_id',auth()->id())->get();
+        
         return Inertia::render('Tasks/Index',[
             'tasks'=>$tasks,
             'lists'=>$lists,
@@ -65,9 +68,37 @@ class TaskController extends Controller
             'description'=>'nullable|string',
             'due_date'=>'nullable|date',
             'list_id'=>'required|exists:list,id',
-            'is_completed'=>'boolean'
+            'is_completed'=>'boolean',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,txt|max:5120',
+            'type' => 'nullable|in:T,L|required_with:attachment',
         ]);
-        Task::create($validated);
+        $task = Task::create([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
+            'list_id' => $validated['list_id'],
+            'is_completed' => $validated['is_completed'] ?? false,
+        ]);
+
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+
+            // Store file in /storage/app/public/attachments
+            $path = $file->store('attachments', 'public');
+
+            // Create entry in files table
+            $storedFile = File::create([
+                'original_name' => $file->getClientOriginalName(),
+                'path' => $path,
+            ]);
+
+            FileRelation::create([
+                'file_id' => $storedFile->id,
+                'type' => 'T',
+                'type_id' => $task->id,
+            ]);
+        }
+
         return redirect()->route('tasks.index')->with('success','Task created successfully.');
     
     }
@@ -98,9 +129,49 @@ class TaskController extends Controller
             'description'=>'nullable|string',
             'due_date'=>'nullable|date',
             'list_id'=>'required|exists:list,id',
-            'is_completed'=>'boolean'
+            'is_completed'=>'boolean',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,pdf,txt|max:5120',
+            'type' => 'nullable|in:T,L|required_with:attachment',
         ]);
-        $task->update($validated);
+         $task->update([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'due_date' => $validated['due_date'] ?? null,
+            'list_id' => $validated['list_id'],
+            'is_completed' => $validated['is_completed'] ?? false,
+        ]);
+
+        if ($request->file('attachment')) {
+
+             // Delete existing file if any
+            $existingRelation = FileRelation::where('type', 'T')
+                                            ->where('type_id', $task->id)
+                                            ->first();
+
+            if ($existingRelation) {
+                $existingFile = File::find($existingRelation->file_id);
+                if ($existingFile) {
+                    \Storage::disk('public')->delete($existingFile->path);
+                    $existingFile->delete();
+                }
+                $existingRelation->delete();
+            }
+
+            $file = $request->file('attachment');
+            $path = $file->store('attachments', 'public');
+
+            // Create new file record
+            $storedFile = File::create([
+                'original_name' => $file->getClientOriginalName(),
+                'path' => $path,
+            ]);
+            FileRelation::create([
+                'file_id' => $storedFile->id,
+                'type' => 'T',
+                'type_id' => $task->id,
+            ]);
+        }
+
         return redirect()->route('tasks.index')->with('success','Task updated successfully.');
     
     }
@@ -110,7 +181,22 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
-       $task->delete();
+        // Get all related files
+        $fileRelations = FileRelation::where('type', 'T') ->where('type_id', $task->id)->get();
+        foreach ($fileRelations as $relation) {
+            $file = File::find($relation->file_id);
+            if ($file) {
+                // Delete physical file
+                \Storage::disk('public')->delete($file->path);
+
+                // Delete file record
+                $file->delete();
+            }
+
+            // Delete relation
+            $relation->delete();
+        }
+        $task->delete();
         return redirect()->route('tasks.index')->with('success','Task deleted successfully');
     
     }
