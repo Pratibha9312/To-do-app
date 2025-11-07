@@ -111,7 +111,7 @@ export default function ListIndex({ lists, flash }: Props){
                 <Card key={list.id} className='hover:bg-accent/50 transition-colors'>
                     <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                     <CardTitle className='text-lg font-medium'>{list.title}</CardTitle>
-                    <div className='flex gap-2'>
+                    <div className='flex gap-2'>  
                         <Button 
                             variant="ghost" 
                             size="icon"  
