@@ -24,7 +24,7 @@ export function Breadcrumbs({ breadcrumbs }: { breadcrumbs: BreadcrumbItemType[]
                                     </BreadcrumbItem>
                                     {!isLast && <BreadcrumbSeparator />}
                                 </Fragment>
-                            );
+                            );  
                         })}
                     </BreadcrumbList>
                 </Breadcrumb>

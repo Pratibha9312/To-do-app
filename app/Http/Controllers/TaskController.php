@@ -14,12 +14,19 @@ class TaskController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request )
     {
+        $routeName = $request->route()->uri();
+        // dump($routeName);
         $query = Task::with(['list', 'file'])
         ->whereHas('list', function($query){
             $query->where('user_id',auth()->id());
         })->orderBy('created_at', 'desc');
+        
+        if ($routeName === 'upcoming') {
+            $query->where('due_date', '>', now()->toDateString());
+        }
+
 
         if(request()->has('search')){
             $search = request('search');
@@ -35,6 +42,21 @@ class TaskController extends Controller
         }
         $tasks = $query->paginate(10);
         $lists = TaskList::where('user_id',auth()->id())->get();
+
+        // if ($routeName === 'upcoming') {
+        //     return Inertia::render('Tasks/Upcoming', [
+        //         'tasks' => $tasks,
+        //         'lists'=>$lists,
+        //         'filters'=>[
+        //             'serach' =>request('search',''),
+        //             'filter'=>request('filter','')
+        //         ],
+        //         'flash'=>[
+        //             'success' =>session('success'),
+        //             'error'=>session('error')
+        //         ]
+        //     ]);
+        // }
         
         return Inertia::render('Tasks/Index',[
             'tasks'=>$tasks,
@@ -47,8 +69,8 @@ class TaskController extends Controller
                 'success' =>session('success'),
                 'error'=>session('error')
             ]
-         ]);
-    }
+        ]);
+    }   
 
     /**
      * Show the form for creating a new resource.

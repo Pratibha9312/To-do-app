@@ -14,6 +14,7 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('lists',ListController::class);
     Route::resource('tasks',TaskController::class);
+    Route::resource('upcoming',TaskController::class);
     Route::get('/dashboard',[DashboardController::class,'index'])->name('dashboard');
     Route::delete('/files/{file}', [FileController::class, 'destroy'])->name('files.destroy');
     // Route::get('dashboard', function () {

@@ -59,9 +59,9 @@ interface Props {
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
-    {
-        title: 'Lists',
-        href: '/lists'
+    { 
+        title: 'Tasks',
+        href: '/tasks'
     }
 ];
 
@@ -75,6 +75,13 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
     const [completionFilter, setCompletionFilter] = useState<'all' | 'completed' | 'pending'>(filters.filter as 'all' | 'completed' | 'pending');
     const [isFileModalOpen, setIsFileModalOpen] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [currentRoute, setCurrentRoute] = useState<string | null>(null);
+
+    const breadcrumbs: BreadcrumbItem[] = [
+       currentRoute === 'upcoming.index'
+        ? { title: 'Upcoming Tasks', href: route('upcoming.index') }
+        : { title: 'Tasks', href: route('tasks.index') }
+    ];
 
     useEffect(() => {
         if(flash?.success){
@@ -96,6 +103,11 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
             return  () => clearTimeout(timer);
         }
     }, [showToast]);
+
+    useEffect(() => {
+        const routeName = route().current();
+        setCurrentRoute(routeName ?? null);
+    }, []);
 
      const  { data, setData, post, put, processing, reset, delete: destroy } = useForm({
         title: '',
@@ -173,13 +185,17 @@ export default function TasksIndex({ tasks, lists, filters, flash }: Props){
                 </div>
                 )}
                 <div className='flex justify-between items-center'>
-                    <h1 className='text-2xl font-bold tracking-tight'>Tasks</h1>
-                    <p className='text-muted-foreground mt-1'>Manage your tasks and stay organized</p>
-                    <NewTaskModal 
-                        open={isOpen} setOpen={setIsOpen} 
-                        editingTask={editingTask} setEditingTask={setEditingTask} 
-                        lists={lists}
-                    />
+                    <h1 className='text-2xl font-bold tracking-tight'>{currentRoute ==='upcoming.index'? 'Upcoming Tasks': 'Tasks'}</h1>
+                    {currentRoute != 'upcoming.index' && (
+                        <>
+                        <p className='text-muted-foreground mt-1'>Manage your tasks and stay organized</p>
+                        <NewTaskModal 
+                            open={isOpen} setOpen={setIsOpen} 
+                            editingTask={editingTask} setEditingTask={setEditingTask} 
+                            lists={lists}
+                        />
+                        </>
+                    )}   
                 </div>
 
                 <div className='flex gap-4 mb-4'>
